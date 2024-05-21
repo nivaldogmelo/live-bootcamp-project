@@ -1,15 +1,14 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, User},
-    services::UserStoreError,
+    domain::{AuthAPIError, User, UserStore, UserStoreError},
+    services::HashmapUserStore,
 };
 
 pub async fn signup(
-    State(state): State<Arc<AppState>>,
+    State(state): State<AppState<HashmapUserStore>>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
     let email = request.email.clone();
@@ -21,7 +20,7 @@ pub async fn signup(
 
     let user = request.into_user();
     let mut user_store = state.user_store.write().await;
-    match user_store.add_user(user) {
+    match user_store.add_user(user).await {
 	Ok(_) => (),
 	Err(UserStoreError::UserAlreadyExists) => return Err(AuthAPIError::UserAlreadyExists),
 	Err(_) => return Err(AuthAPIError::UnexpectedError),

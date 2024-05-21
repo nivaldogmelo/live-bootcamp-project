@@ -8,7 +8,8 @@ use axum::{
 };
 use domain::AuthAPIError;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, sync::Arc};
+use services::HashmapUserStore;
+use std::error::Error;
 use tower_http::services::ServeDir;
 
 use routes::*;
@@ -25,7 +26,10 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(app_state: Arc<AppState>, address: &str) -> Result<Self, Box<dyn Error>> {
+    pub async fn build(
+	app_state: AppState<HashmapUserStore>,
+	address: &str,
+    ) -> Result<Self, Box<dyn Error>> {
 	let router = Router::new()
 	    .nest_service("/", ServeDir::new("assets"))
 	    .route("/signup", post(signup))
