@@ -2,21 +2,36 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::{app_state::AppState, domain::User};
+use crate::{
+    app_state::AppState,
+    domain::{AuthAPIError, User},
+    services::UserStoreError,
+};
 
 pub async fn signup(
     State(state): State<Arc<AppState>>,
     Json(request): Json<SignupRequest>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AuthAPIError> {
+    let email = request.email.clone();
+    let password = request.password.clone();
+
+    if !email.contains('@') || password.len() < 8 {
+	return Err(AuthAPIError::InvalidCredentials);
+    }
+
     let user = request.into_user();
     let mut user_store = state.user_store.write().await;
-    let _ = user_store.add_user(user);
+    match user_store.add_user(user) {
+	Ok(_) => (),
+	Err(UserStoreError::UserAlreadyExists) => return Err(AuthAPIError::UserAlreadyExists),
+	Err(_) => return Err(AuthAPIError::UnexpectedError),
+    };
 
     let response = Json(SignupResponse {
 	message: "User created successfully!".to_string(),
     });
 
-    (StatusCode::CREATED, response)
+    Ok((StatusCode::CREATED, response))
 }
 
 #[derive(Serialize)]
@@ -33,7 +48,7 @@ pub struct SignupRequest {
 }
 
 impl SignupRequest {
-    fn into_user(&self) -> User {
+    fn into_user(self) -> User {
 	User::new(self.email.clone(), self.password.clone(), self.requires_2fa)
     }
 }

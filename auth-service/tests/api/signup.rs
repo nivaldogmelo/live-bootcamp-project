@@ -1,3 +1,5 @@
+use auth_service::ErrorResponse;
+
 use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
@@ -18,6 +20,75 @@ async fn should_return_201_if_valid_input() {
 	    201,
 	    "Test case failed: {:?}",
 	    test_case
+	);
+    }
+}
+
+#[tokio::test]
+async fn should_return_400_if_invalid_input() {
+    let app = TestApp::new().await;
+
+    let random_email = get_random_email();
+
+    let test_cases = [
+	serde_json::json!({"email": "invalid-email", "password": "password123", "requires2FA": true}),
+	serde_json::json!({"email": random_email, "password": "pass", "requires2FA": true}),
+    ];
+
+    for test_case in test_cases.iter() {
+	let response = app.post_signup(test_case).await;
+
+	assert_eq!(
+	    response.status().as_u16(),
+	    400,
+	    "Test case failed: {:?}",
+	    test_case
+	);
+
+	assert_eq!(
+	    response
+		.json::<ErrorResponse>()
+		.await
+		.expect("Could not deserialize response body to ErrorResponse")
+		.error,
+	    "Invalid credentials".to_owned()
+	);
+    }
+}
+
+#[tokio::test]
+async fn should_return_409_if_email_already_exists() {
+    let app = TestApp::new().await;
+
+    let email1 = get_random_email();
+    let email2 = get_random_email();
+
+    let test_cases = [
+	serde_json::json!({"email": email1, "password": "password123", "requires2FA": true}),
+	serde_json::json!({"email": email2, "password": "password123", "requires2FA": true}),
+    ];
+
+    for test_case in test_cases.iter() {
+	app.post_signup(test_case).await;
+    }
+
+    for test_case in test_cases.iter() {
+	let response = app.post_signup(test_case).await;
+
+	assert_eq!(
+	    response.status().as_u16(),
+	    409,
+	    "Test case failed: {:?}",
+	    test_case
+	);
+
+	assert_eq!(
+	    response
+		.json::<ErrorResponse>()
+		.await
+		.expect("Could not deserialize response body to ErrorResponse")
+		.error,
+	    "User already exists".to_owned()
 	);
     }
 }
