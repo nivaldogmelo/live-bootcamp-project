@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, User, UserStore, UserStoreError},
+    domain::{AuthAPIError, Email, Password, User, UserStore, UserStoreError},
     services::HashmapUserStore,
 };
 
@@ -11,15 +11,10 @@ pub async fn signup(
     State(state): State<AppState<HashmapUserStore>>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = request.email.clone();
-    let password = request.password.clone();
+    let user = request.into_user().map_err(|e| e)?;
 
-    if !email.contains('@') || password.len() < 8 {
-	return Err(AuthAPIError::InvalidCredentials);
-    }
-
-    let user = request.into_user();
     let mut user_store = state.user_store.write().await;
+
     match user_store.add_user(user).await {
 	Ok(_) => (),
 	Err(UserStoreError::UserAlreadyExists) => return Err(AuthAPIError::UserAlreadyExists),
@@ -47,7 +42,12 @@ pub struct SignupRequest {
 }
 
 impl SignupRequest {
-    fn into_user(self) -> User {
-	User::new(self.email.clone(), self.password.clone(), self.requires_2fa)
+    fn into_user(self) -> Result<User, AuthAPIError> {
+	let email =
+	    Email::parse(self.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+	let password =
+	    Password::parse(self.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+
+	Ok(User::new(email, password, self.requires_2fa))
     }
 }

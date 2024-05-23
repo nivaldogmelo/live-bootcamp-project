@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use(quickcheck)]
+extern crate quickcheck_macros;
+
 use app_state::AppState;
 use axum::{
     http::StatusCode,

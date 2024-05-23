@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
+use crate::domain::Email;
+use crate::domain::Password;
 use crate::domain::User;
 use crate::domain::UserStore;
 use crate::domain::UserStoreError;
 
 #[derive(Default, Clone)]
 pub struct HashmapUserStore {
-    users: HashMap<String, User>,
+    users: HashMap<Email, User>,
 }
 
 #[async_trait::async_trait]
@@ -20,17 +22,21 @@ impl UserStore for HashmapUserStore {
 	Ok(())
     }
 
-    async fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
 	match self.users.get(email) {
-	    Some(user) => Ok(user),
+	    Some(user) => Ok(user.clone()),
 	    None => Err(UserStoreError::UserNotFound),
 	}
     }
 
-    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(
+	&self,
+	email: &Email,
+	password: &Password,
+    ) -> Result<(), UserStoreError> {
 	match self.users.get(email) {
 	    Some(user) => {
-		if user.password == password {
+		if user.password.eq(password) {
 		    Ok(())
 		} else {
 		    Err(UserStoreError::InvalidCredentials)
@@ -45,22 +51,16 @@ impl UserStore for HashmapUserStore {
 async fn test_add_user() {
     let mut users = HashmapUserStore::default();
     let user1 = User {
-	email: "johndoe@example.com".to_string(),
-	password: "password".to_string(),
-	requires_2fa: true,
-    };
-
-    let user2 = User {
-	email: "johndoe@example.com".to_string(),
-	password: "password".to_string(),
+	email: Email::parse("johndoe@example.com".to_owned()).unwrap(),
+	password: Password::parse("password".to_owned()).unwrap(),
 	requires_2fa: true,
     };
 
     // Ok scenario ////////////////////////////////////////////////////////
-    assert_eq!(users.add_user(user1).await, Ok(()));
+    assert_eq!(users.add_user(user1.clone()).await, Ok(()));
     // User already exists ////////////////////////////////////////////////
     assert_eq!(
-	users.add_user(user2).await,
+	users.add_user(user1).await,
 	Err(UserStoreError::UserAlreadyExists)
     );
 }
@@ -68,21 +68,21 @@ async fn test_add_user() {
 #[tokio::test]
 async fn test_get_user() {
     let mut users = HashmapUserStore::default();
-    let user_found = User {
-	email: "johndoe@example.com".to_string(),
-	password: "password".to_string(),
+    let user = User {
+	email: Email::parse("johndoe@example.com".to_owned()).unwrap(),
+	password: Password::parse("password".to_owned()).unwrap(),
 	requires_2fa: true,
     };
-    let _ = users.add_user(user_found).await;
+    users.users.insert(user.email.clone(), user.clone());
     // Ok scenario ////////////////////////////////////////////////////////
-    assert_eq!(
-	users.get_user("johndoe@example.com").await.unwrap().email,
-	"johndoe@example.com"
-    );
+    let result = users.get_user(&user.email).await;
+    assert_eq!(result, Ok(user));
 
     // UserNotfound ///////////////////////////////////////////////////////
     assert_eq!(
-	users.get_user("marydoe@example.com").await,
+	users
+	    .get_user(&Email::parse("marydoe@example.com".to_owned()).unwrap())
+	    .await,
 	Err(UserStoreError::UserNotFound)
     );
 }
@@ -90,30 +90,40 @@ async fn test_get_user() {
 #[tokio::test]
 async fn test_validate_user() {
     let mut users = HashmapUserStore::default();
-    let user_found = User {
-	email: "johndoe@example.com".to_string(),
-	password: "password".to_string(),
+    let user = User {
+	email: Email::parse("johndoe@example.com".to_owned()).unwrap(),
+	password: Password::parse("password".to_owned()).unwrap(),
 	requires_2fa: true,
     };
 
-    let _ = users.add_user(user_found).await;
+    let _ = users.add_user(user.clone()).await;
 
     // Ok scenario ////////////////////////////////////////////////////////
     assert_eq!(
-	users.validate_user("johndoe@example.com", "password").await,
+	users
+	    .validate_user(&user.email.clone(), &user.password.clone())
+	    .await,
 	Ok(())
     );
 
     // UserNotfound ///////////////////////////////////////////////////////
     assert_eq!(
-	users.validate_user("marydoe@example.com", "password").await,
+	users
+	    .validate_user(
+		&Email::parse("marydoe@example.com".to_owned()).unwrap(),
+		&Password::parse("password".to_owned()).unwrap()
+	    )
+	    .await,
 	Err(UserStoreError::UserNotFound)
     );
 
     // InvalidCredentials /////////////////////////////////////////////////
     assert_eq!(
 	users
-	    .validate_user("johndoe@example.com", "other_password")
+	    .validate_user(
+		&user.email.clone(),
+		&Password::parse("wrong_password".to_owned()).unwrap()
+	    )
 	    .await,
 	Err(UserStoreError::InvalidCredentials)
     );
