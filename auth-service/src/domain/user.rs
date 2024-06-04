@@ -9,10 +9,10 @@ pub struct User {
 
 impl User {
     pub fn new(email: Email, password: Password, requires_2fa: bool) -> User {
-	User {
-	    email,
-	    password,
-	    requires_2fa,
-	}
+        User {
+            email,
+            password,
+            requires_2fa,
+        }
     }
 }

@@ -10,7 +10,7 @@ use axum::{
     serve::Serve,
     Json, Router,
 };
-use domain::AuthAPIError;
+use domain::{AuthAPIError, User};
 use serde::{Deserialize, Serialize};
 use services::HashmapUserStore;
 use std::error::Error;
@@ -66,6 +66,9 @@ impl IntoResponse for AuthAPIError {
 	let (status, error_message) = match self {
 	    AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
 	    AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+	    AuthAPIError::IncorrectCredentials => {
+		(StatusCode::UNAUTHORIZED, "Incorrect Credentials")
+	    }
 	    AuthAPIError::UnexpectedError => {
 		(StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
 	    }
@@ -77,4 +80,8 @@ impl IntoResponse for AuthAPIError {
 
 	(status, body).into_response()
     }
+}
+
+pub trait AuthRequest {
+    fn into_user(self) -> Result<User, AuthAPIError>;
 }
