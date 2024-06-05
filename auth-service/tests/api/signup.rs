@@ -13,7 +13,7 @@ async fn should_return_201_if_valid_input() {
     ];
 
     for test_case in test_cases.iter() {
-	let response = app.post_login(test_case).await;
+	let response = app.post_signup(test_case).await;
 
 	assert_eq!(
 	    response.status().as_u16(),
@@ -36,7 +36,7 @@ async fn should_return_400_if_invalid_input() {
     ];
 
     for test_case in test_cases.iter() {
-	let response = app.post_login(test_case).await;
+	let response = app.post_signup(test_case).await;
 
 	assert_eq!(
 	    response.status().as_u16(),
@@ -69,11 +69,11 @@ async fn should_return_409_if_email_already_exists() {
     ];
 
     for test_case in test_cases.iter() {
-	app.post_login(test_case).await;
+	app.post_signup(test_case).await;
     }
 
     for test_case in test_cases.iter() {
-	let response = app.post_login(test_case).await;
+	let response = app.post_signup(test_case).await;
 
 	assert_eq!(
 	    response.status().as_u16(),
@@ -105,7 +105,7 @@ async fn should_return_422_if_malformed_input() {
     ];
 
     for test_case in test_cases.iter() {
-	let response = app.post_login(test_case).await;
+	let response = app.post_signup(test_case).await;
 
 	assert_eq!(
 	    response.status().as_u16(),
