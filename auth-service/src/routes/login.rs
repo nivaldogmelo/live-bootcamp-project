@@ -15,28 +15,28 @@ pub async fn login(
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let email = match Email::parse(request.email) {
-	Ok(email) => email,
-	Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+        Ok(email) => email,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
 
     let password = match Password::parse(request.password) {
-	Ok(password) => password,
-	Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
+        Ok(password) => password,
+        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
 
     let user_store = &state.user_store.read().await;
 
     if user_store.validate_user(&email, &password).await.is_err() {
-	return (jar, Err(AuthAPIError::IncorrectCredentials));
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
     };
 
     if user_store.get_user(&email).await.is_err() {
-	return (jar, Err(AuthAPIError::IncorrectCredentials));
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
     };
 
     let auth_cookie = match generate_auth_cookie(&email) {
-	Ok(cookie) => cookie,
-	Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Ok(cookie) => cookie,
+        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
     };
 
     let updated_jar = jar.add(auth_cookie);

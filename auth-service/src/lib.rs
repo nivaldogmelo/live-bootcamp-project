@@ -4,7 +4,7 @@ extern crate quickcheck_macros;
 
 use app_state::AppState;
 use axum::{
-    http::StatusCode,
+    http::{Method, StatusCode},
     response::{IntoResponse, Response},
     routing::post,
     serve::Serve,
@@ -14,7 +14,7 @@ use domain::{AuthAPIError, User};
 use serde::{Deserialize, Serialize};
 use services::HashmapUserStore;
 use std::error::Error;
-use tower_http::services::ServeDir;
+use tower_http::{cors::CorsLayer, services::ServeDir};
 
 use routes::*;
 
@@ -35,6 +35,16 @@ impl Application {
 	app_state: AppState<HashmapUserStore>,
 	address: &str,
     ) -> Result<Self, Box<dyn Error>> {
+	let allowed_origins = [
+	    "http://localhost:3000".parse()?,
+	    "http://192.241.129.202:8000".parse()?,
+	];
+
+	let cors = CorsLayer::new()
+	    .allow_methods([Method::GET, Method::POST])
+	    .allow_credentials(true)
+	    .allow_origin(allowed_origins);
+
 	let router = Router::new()
 	    .nest_service("/", ServeDir::new("assets"))
 	    .route("/signup", post(signup))
@@ -42,7 +52,8 @@ impl Application {
 	    .route("/verify-2fa", post(verify_2fa))
 	    .route("/logout", post(logout))
 	    .route("/verify-token", post(verify_token))
-	    .with_state(app_state);
+	    .with_state(app_state)
+	    .layer(cors);
 
 	let listener = tokio::net::TcpListener::bind(address).await?;
 	let address = listener.local_addr()?.to_string();
@@ -73,6 +84,8 @@ impl IntoResponse for AuthAPIError {
 	    AuthAPIError::UnexpectedError => {
 		(StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
 	    }
+	    AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing auth token"),
+	    AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "JWT is not valid"),
 	};
 
 	let body = Json(ErrorResponse {
