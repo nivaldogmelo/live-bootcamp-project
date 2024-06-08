@@ -1,3 +1,4 @@
+use auth_service::domain::BannedTokenStore;
 use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 use reqwest::Url;
 
