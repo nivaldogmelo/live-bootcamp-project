@@ -73,6 +73,44 @@ async fn should_return_401_if_valid_token() {
 }
 
 #[tokio::test]
+async fn should_return_401_if_banned_token() {
+    let app = TestApp::new().await;
+
+    let token = "banned_token".to_owned();
+
+    if app
+	.banned_token_store
+	.write()
+	.await
+	.add_banned_token(token.clone())
+	.await
+	.is_err()
+    {
+	panic!("Could not add banned token to store");
+    }
+
+    let test_case = serde_json::json!({"token": "banned_token"});
+
+    let response = app.post_verify_token(&test_case).await;
+
+    assert_eq!(
+	response.status().as_u16(),
+	401,
+	"Test case failed: {:?}",
+	test_case
+    );
+
+    assert_eq!(
+	response
+	    .json::<ErrorResponse>()
+	    .await
+	    .expect("Could not deserialize response body to ErrorResponse")
+	    .error,
+	"JWT is not valid".to_owned()
+    );
+}
+
+#[tokio::test]
 async fn should_return_422_if_malformed_input() {
     let app = TestApp::new().await;
 

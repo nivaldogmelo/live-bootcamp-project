@@ -12,7 +12,6 @@ use axum::{
 };
 use domain::{AuthAPIError, User};
 use serde::{Deserialize, Serialize};
-use services::HashmapUserStore;
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
@@ -31,10 +30,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(
-	app_state: AppState<HashmapUserStore>,
-	address: &str,
-    ) -> Result<Self, Box<dyn Error>> {
+    pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
 	let allowed_origins = [
 	    "http://localhost:3000".parse()?,
 	    "http://192.241.129.202:8000".parse()?,
