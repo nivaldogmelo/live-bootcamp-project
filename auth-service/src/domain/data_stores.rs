@@ -5,9 +5,9 @@ pub trait UserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
     async fn get_user(&self, username: &Email) -> Result<User, UserStoreError>;
     async fn validate_user(
-	&self,
-	username: &Email,
-	password: &Password,
+        &self,
+        username: &Email,
+        password: &Password,
     ) -> Result<(), UserStoreError>;
 }
 
@@ -34,14 +34,14 @@ pub enum BannedTokenStoreError {
 #[async_trait::async_trait]
 pub trait TwoFACodeStore {
     async fn add_code(
-	&mut self,
-	email: Email,
-	login_attempt_id: LoginAttemptId,
-	code: TwoFACode,
+        &mut self,
+        email: Email,
+        login_attempt_id: LoginAttemptId,
+        code: TwoFACode,
     ) -> Result<(), TwoFACodeStoreError>;
     async fn get_code(
-	&self,
-	email: &Email,
+        &self,
+        email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError>;
 }
