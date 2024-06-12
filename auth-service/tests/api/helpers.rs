@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use auth_service::{
     app_state::AppState,
-    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore, MockEmailClient},
     utils::constants::test,
     Application,
 };
@@ -23,10 +23,12 @@ impl TestApp {
 	let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
 	let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
 	let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+	let email_client = Arc::new(MockEmailClient);
 	let app_state = AppState::new(
 	    user_store,
 	    banned_token_store.clone(),
 	    two_fa_code_store.clone(),
+	    email_client,
 	);
 
 	let app = Application::build(app_state, test::APP_ADDRESS)
@@ -87,21 +89,13 @@ impl TestApp {
 	    .expect("Failed to execute request.")
     }
 
-    pub async fn post_verify_2fa(
-	&self,
-	email: &str,
-	login_attempt_id: &str,
-	code: &str,
-    ) -> reqwest::Response {
-	let var_name = serde_json::json!({
-	"email": email,
-	"loginAttemptId": login_attempt_id,
-	"2FACODE": code,
-	});
-
+    pub async fn post_verify_2fa<Body>(&self, body: &Body) -> reqwest::Response
+    where
+	Body: serde::Serialize,
+    {
 	self.http_client
 	    .post(&format!("{}/verify-2fa", self.address))
-	    .json(&var_name)
+	    .json(&body)
 	    .send()
 	    .await
 	    .expect("Failed to send request.")
