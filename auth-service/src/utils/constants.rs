@@ -4,19 +4,30 @@ use std::env as std_env;
 
 lazy_static! {
     pub static ref JWT_SECRET: String = set_token();
+    pub static ref DATABASE_URL: String = set_postgres_pass();
 }
 
 fn set_token() -> String {
     dotenv().ok();
     let secret = std_env::var(env::JWT_SECRET_ENV_VAR).expect("JWT_SECRET must be set");
     if secret.is_empty() {
-        panic!("JWT_SECRET must not be empty");
+	panic!("JWT_SECRET must not be empty");
+    }
+    secret
+}
+
+fn set_postgres_pass() -> String {
+    dotenv().ok();
+    let secret = std_env::var(env::DATABASE_URL_ENV_VAR).expect("DATABASE_URL must be set");
+    if secret.is_empty() {
+	panic!("DATABASE_URL must not be empty");
     }
     secret
 }
 
 pub mod env {
     pub const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
+    pub const DATABASE_URL_ENV_VAR: &str = "DATABASE_URL";
 }
 
 pub const JWT_COOKIE_NAME: &str = "jwt";

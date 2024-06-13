@@ -12,6 +12,7 @@ use axum::{
 };
 use domain::{AuthAPIError, User};
 use serde::{Deserialize, Serialize};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
@@ -94,4 +95,8 @@ impl IntoResponse for AuthAPIError {
 
 pub trait AuthRequest {
     fn into_user(self) -> Result<User, AuthAPIError>;
+}
+
+pub async fn get_postgres_pool(url: &str) -> Result<PgPool, sqlx::Error> {
+    PgPoolOptions::new().max_connections(5).connect(url).await
 }
