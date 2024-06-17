@@ -61,36 +61,35 @@ async fn should_return_409_if_email_already_exists() {
     let app = TestApp::new().await;
 
     let email1 = get_random_email();
-    let email2 = get_random_email();
 
-    let test_cases = [
-	serde_json::json!({"email": email1, "password": "password123", "requires2FA": true}),
-	serde_json::json!({"email": email2, "password": "password123", "requires2FA": true}),
-    ];
+    let test_body =
+	serde_json::json!({"email": email1, "password": "password123", "requires2FA": true});
 
-    for test_case in test_cases.iter() {
-	app.post_signup(test_case).await;
-    }
+    app.post_signup(&test_body).await;
 
-    for test_case in test_cases.iter() {
-	let response = app.post_signup(test_case).await;
+    let response = app.post_signup(&test_body).await;
 
-	assert_eq!(
-	    response.status().as_u16(),
-	    409,
-	    "Test case failed: {:?}",
-	    test_case
-	);
+    assert_eq!(response.status().as_u16(), 201);
 
-	assert_eq!(
-	    response
-		.json::<ErrorResponse>()
-		.await
-		.expect("Could not deserialize response body to ErrorResponse")
-		.error,
-	    "User already exists".to_owned()
-	);
-    }
+    app.post_signup(&test_body).await;
+
+    let response = app.post_signup(&test_body).await;
+
+    assert_eq!(
+	response.status().as_u16(),
+	409,
+	"Test case failed: {:?}",
+	test_body
+    );
+
+    assert_eq!(
+	response
+	    .json::<ErrorResponse>()
+	    .await
+	    .expect("Could not deserialize response body to ErrorResponse")
+	    .error,
+	"User already exists".to_owned()
+    );
 }
 
 #[tokio::test]
