@@ -3,13 +3,12 @@ use auth_service::{
     routes::TwoFactorAuthResponse,
     utils::constants::JWT_COOKIE_NAME,
 };
+use macros::test_and_cleanup;
 
 use crate::helpers::{get_random_email, TestApp};
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_200_if_correct_code() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({"email": random_email.clone(), "password": "password123", "requires2FA": true});
@@ -61,10 +60,8 @@ async fn should_return_200_if_correct_code() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
     let random_uuid = uuid::Uuid::new_v4().to_string();
 
@@ -81,10 +78,8 @@ async fn should_return_400_if_invalid_input() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({"email": random_email.clone(), "password": "password123", "requires2FA": true});
@@ -133,10 +128,8 @@ async fn should_return_401_if_incorrect_credentials() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_401_if_old_code() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({"email": random_email.clone(), "password": "password123", "requires2FA": true});
@@ -192,10 +185,8 @@ async fn should_return_401_if_old_code() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_401_if_same_code_twice() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({"email": random_email.clone(), "password": "password123", "requires2FA": true});
@@ -247,10 +238,8 @@ async fn should_return_401_if_same_code_twice() {
     assert_eq!(response.status().as_u16(), 401);
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
     let random_uuid = LoginAttemptId::default().as_ref().to_owned();
 

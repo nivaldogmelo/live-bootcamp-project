@@ -4,11 +4,10 @@ use auth_service::{
 };
 
 use crate::helpers::{get_random_email, TestApp};
+use macros::test_and_cleanup;
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({"email": random_email.clone(), "password": "password123", "requires2FA": false});
@@ -31,10 +30,8 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     assert!(!auth_cookie.value().is_empty());
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({"email": random_email.clone(), "password": "password123", "requires2FA": true});
@@ -63,10 +60,8 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     assert!(store.get_code(&email).await.is_ok());
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [
@@ -95,10 +90,8 @@ async fn should_return_400_if_invalid_input() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [serde_json::json!({"email": random_email, "password": "password123"})];
@@ -124,10 +117,8 @@ async fn should_return_401_if_incorrect_credentials() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [

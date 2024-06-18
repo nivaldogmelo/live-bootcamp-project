@@ -1,11 +1,10 @@
 use auth_service::ErrorResponse;
+use macros::test_and_cleanup;
 
 use crate::helpers::{get_random_email, TestApp};
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_201_if_valid_input() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [
@@ -24,10 +23,8 @@ async fn should_return_201_if_valid_input() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [
@@ -56,20 +53,14 @@ async fn should_return_400_if_invalid_input() {
     }
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_409_if_email_already_exists() {
-    let app = TestApp::new().await;
-
     let email1 = get_random_email();
 
     let test_body =
 	serde_json::json!({"email": email1, "password": "password123", "requires2FA": true});
 
     app.post_signup(&test_body).await;
-
-    let response = app.post_signup(&test_body).await;
-
-    assert_eq!(response.status().as_u16(), 201);
 
     app.post_signup(&test_body).await;
 
@@ -92,10 +83,8 @@ async fn should_return_409_if_email_already_exists() {
     );
 }
 
-#[tokio::test]
+#[test_and_cleanup]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let test_cases = [
