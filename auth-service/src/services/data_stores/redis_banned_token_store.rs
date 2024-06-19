@@ -14,35 +14,35 @@ pub struct RedisBannedTokenStore {
 
 impl RedisBannedTokenStore {
     pub fn new(conn: Arc<RwLock<Connection>>) -> Self {
-	Self { conn }
+        Self { conn }
     }
 }
 
 #[async_trait::async_trait]
 impl BannedTokenStore for RedisBannedTokenStore {
     async fn add_banned_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-	let key = get_key(&token);
+        let key = get_key(&token);
 
-	let mut conn = self.conn.write().await;
+        let mut conn = self.conn.write().await;
 
-	redis::Cmd::set_ex(&key, true, TOKEN_TTL_SECONDS as u64)
-	    .query(&mut conn)
-	    .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+        redis::Cmd::set_ex(&key, true, TOKEN_TTL_SECONDS as u64)
+            .query(&mut conn)
+            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
 
-	Ok(())
+        Ok(())
     }
 
     async fn is_banned_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
-	let key = get_key(token);
+        let key = get_key(token);
 
-	let mut conn = self.conn.write().await;
+        let mut conn = self.conn.write().await;
 
-	let is_banned: bool = redis::cmd("EXISTS")
-	    .arg(&key)
-	    .query(&mut conn)
-	    .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+        let is_banned: bool = redis::cmd("EXISTS")
+            .arg(&key)
+            .query(&mut conn)
+            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
 
-	Ok(is_banned)
+        Ok(is_banned)
     }
 }
 
