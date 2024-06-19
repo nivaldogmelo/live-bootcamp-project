@@ -12,7 +12,7 @@ fn set_token() -> String {
     dotenv().ok();
     let secret = std_env::var(env::JWT_SECRET_ENV_VAR).expect("JWT_SECRET must be set");
     if secret.is_empty() {
-	panic!("JWT_SECRET must not be empty");
+        panic!("JWT_SECRET must not be empty");
     }
     secret
 }
@@ -21,7 +21,7 @@ fn set_postgres_url() -> String {
     dotenv().ok();
     let secret = std_env::var(env::DATABASE_URL_ENV_VAR).expect("DATABASE_URL must be set");
     if secret.is_empty() {
-	panic!("DATABASE_URL must not be empty");
+        panic!("DATABASE_URL must not be empty");
     }
     secret
 }

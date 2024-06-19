@@ -12,68 +12,68 @@ pub struct RedisTwoFACodeStore {
 
 impl RedisTwoFACodeStore {
     pub fn new(conn: Arc<RwLock<Connection>>) -> Self {
-	Self { conn }
+        Self { conn }
     }
 }
 
 #[async_trait::async_trait]
 impl TwoFACodeStore for RedisTwoFACodeStore {
     async fn add_code(
-	&mut self,
-	email: Email,
-	login_attempt_id: LoginAttemptId,
-	code: TwoFACode,
+        &mut self,
+        email: Email,
+        login_attempt_id: LoginAttemptId,
+        code: TwoFACode,
     ) -> Result<(), TwoFACodeStoreError> {
-	let key = get_key(&email);
+        let key = get_key(&email);
 
-	let value = TwoFATuple(
-	    login_attempt_id.as_ref().to_string(),
-	    code.as_ref().to_string(),
-	);
+        let value = TwoFATuple(
+            login_attempt_id.as_ref().to_string(),
+            code.as_ref().to_string(),
+        );
 
-	let value =
-	    serde_json::to_string(&value).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
-	let mut conn = self.conn.write().await;
+        let value =
+            serde_json::to_string(&value).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let mut conn = self.conn.write().await;
 
-	redis::Cmd::set_ex(&key, value, TEN_MINUTES)
-	    .query(&mut conn)
-	    .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        redis::Cmd::set_ex(&key, value, TEN_MINUTES)
+            .query(&mut conn)
+            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-	Ok(())
+        Ok(())
     }
 
     async fn get_code(
-	&self,
-	email: &Email,
+        &self,
+        email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
-	let key = get_key(email);
+        let key = get_key(email);
 
-	let mut conn = self.conn.write().await;
+        let mut conn = self.conn.write().await;
 
-	let value: String = redis::Cmd::get(&key)
-	    .query(&mut conn)
-	    .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let value: String = redis::Cmd::get(&key)
+            .query(&mut conn)
+            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-	let TwoFATuple(login_attempt_id, code) =
-	    serde_json::from_str(&value).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let TwoFATuple(login_attempt_id, code) =
+            serde_json::from_str(&value).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-	let login_attempt_id = LoginAttemptId::parse(login_attempt_id)
-	    .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
-	let code = TwoFACode::parse(code).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let login_attempt_id = LoginAttemptId::parse(login_attempt_id)
+            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let code = TwoFACode::parse(code).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-	Ok((login_attempt_id, code))
+        Ok((login_attempt_id, code))
     }
 
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
-	let key = get_key(email);
+        let key = get_key(email);
 
-	let mut conn = self.conn.write().await;
+        let mut conn = self.conn.write().await;
 
-	redis::Cmd::del(&key)
-	    .query(&mut conn)
-	    .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        redis::Cmd::del(&key)
+            .query(&mut conn)
+            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-	Ok(())
+        Ok(())
     }
 }
 
