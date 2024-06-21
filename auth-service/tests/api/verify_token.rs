@@ -28,9 +28,9 @@ async fn should_return_200_valid_token() {
     assert_eq!(response.status().as_u16(), 200);
 
     let auth_cookie = response
-	.cookies()
-	.find(|cookie| cookie.name() == JWT_COOKIE_NAME)
-	.expect("No JWT cookie found");
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No JWT cookie found");
 
     assert!(!auth_cookie.value().is_empty());
 
@@ -50,23 +50,23 @@ async fn should_return_401_if_valid_token() {
     let test_cases = [serde_json::json!({"token": ""})];
 
     for test_case in test_cases.iter() {
-	let response = app.post_verify_token(&test_case).await;
+        let response = app.post_verify_token(&test_case).await;
 
-	assert_eq!(
-	    response.status().as_u16(),
-	    401,
-	    "Test case failed: {:?}",
-	    test_case
-	);
+        assert_eq!(
+            response.status().as_u16(),
+            401,
+            "Test case failed: {:?}",
+            test_case
+        );
 
-	assert_eq!(
-	    response
-		.json::<ErrorResponse>()
-		.await
-		.expect("Could not deserialize response body to ErrorResponse")
-		.error,
-	    "JWT is not valid".to_owned()
-	);
+        assert_eq!(
+            response
+                .json::<ErrorResponse>()
+                .await
+                .expect("Could not deserialize response body to ErrorResponse")
+                .error,
+            "JWT is not valid".to_owned()
+        );
     }
 }
 
@@ -75,14 +75,14 @@ async fn should_return_401_if_banned_token() {
     let token = "banned_token".to_owned();
 
     if app
-	.banned_token_store
-	.write()
-	.await
-	.add_banned_token(token.clone())
-	.await
-	.is_err()
+        .banned_token_store
+        .write()
+        .await
+        .add_banned_token(token.clone())
+        .await
+        .is_err()
     {
-	panic!("Could not add banned token to store");
+        panic!("Could not add banned token to store");
     }
 
     let test_case = serde_json::json!({"token": "banned_token"});
@@ -90,33 +90,33 @@ async fn should_return_401_if_banned_token() {
     let response = app.post_verify_token(&test_case).await;
 
     assert_eq!(
-	response.status().as_u16(),
-	401,
-	"Test case failed: {:?}",
-	test_case
+        response.status().as_u16(),
+        401,
+        "Test case failed: {:?}",
+        test_case
     );
 
     assert_eq!(
-	response
-	    .json::<ErrorResponse>()
-	    .await
-	    .expect("Could not deserialize response body to ErrorResponse")
-	    .error,
-	"JWT is not valid".to_owned()
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Could not deserialize response body to ErrorResponse")
+            .error,
+        "JWT is not valid".to_owned()
     );
 }
 
 #[test_and_cleanup]
 async fn should_return_422_if_malformed_input() {
     let test_cases = [
-	serde_json::json!({"password": "password123"}),
-	serde_json::json!({"email": ""}),
-	serde_json::json!({"toke": "fiudosagfbn34"}),
+        serde_json::json!({"password": "password123"}),
+        serde_json::json!({"email": ""}),
+        serde_json::json!({"toke": "fiudosagfbn34"}),
     ];
 
     for test_case in test_cases.iter() {
-	let response = app.post_verify_token(&test_case).await;
+        let response = app.post_verify_token(&test_case).await;
 
-	assert_eq!(response.status().as_u16(), 422);
+        assert_eq!(response.status().as_u16(), 422);
     }
 }

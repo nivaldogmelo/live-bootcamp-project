@@ -7,7 +7,7 @@ use crate::{
     AuthRequest,
 };
 
-#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
+#[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
@@ -17,18 +17,18 @@ pub async fn signup(
     let mut user_store = state.user_store.write().await;
 
     if user_store.get_user(&user.email).await.is_ok() {
-	return Err(AuthAPIError::UserAlreadyExists);
+        return Err(AuthAPIError::UserAlreadyExists);
     }
 
     match user_store.add_user(user).await {
-	Ok(_) => (),
-	Err(_) => {
-	    return Err(AuthAPIError::UnexpectedError);
-	}
+        Ok(_) => (),
+        Err(e) => {
+            return Err(AuthAPIError::UnexpectedError(e.into()));
+        }
     };
 
     let response = Json(SignupResponse {
-	message: "User created successfully!".to_string(),
+        message: "User created successfully!".to_string(),
     });
 
     Ok((StatusCode::CREATED, response))
@@ -49,11 +49,11 @@ pub struct SignupRequest {
 
 impl AuthRequest for SignupRequest {
     fn into_user(self) -> Result<User, AuthAPIError> {
-	let email =
-	    Email::parse(self.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
-	let password =
-	    Password::parse(self.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+        let email =
+            Email::parse(self.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+        let password =
+            Password::parse(self.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
-	Ok(User::new(email, password, self.requires_2fa))
+        Ok(User::new(email, password, self.requires_2fa))
     }
 }
