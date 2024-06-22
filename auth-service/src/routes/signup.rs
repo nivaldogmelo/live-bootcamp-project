@@ -1,4 +1,5 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -17,18 +18,18 @@ pub async fn signup(
     let mut user_store = state.user_store.write().await;
 
     if user_store.get_user(&user.email).await.is_ok() {
-        return Err(AuthAPIError::UserAlreadyExists);
+	return Err(AuthAPIError::UserAlreadyExists);
     }
 
     match user_store.add_user(user).await {
-        Ok(_) => (),
-        Err(e) => {
-            return Err(AuthAPIError::UnexpectedError(e.into()));
-        }
+	Ok(_) => (),
+	Err(e) => {
+	    return Err(AuthAPIError::UnexpectedError(e.into()));
+	}
     };
 
     let response = Json(SignupResponse {
-        message: "User created successfully!".to_string(),
+	message: "User created successfully!".to_string(),
     });
 
     Ok((StatusCode::CREATED, response))
@@ -42,18 +43,18 @@ pub struct SignupResponse {
 #[derive(Deserialize)]
 pub struct SignupRequest {
     pub email: String,
-    pub password: String,
+    pub password: Secret<String>,
     #[serde(rename = "requires2FA")]
     pub requires_2fa: bool,
 }
 
 impl AuthRequest for SignupRequest {
     fn into_user(self) -> Result<User, AuthAPIError> {
-        let email =
-            Email::parse(self.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
-        let password =
-            Password::parse(self.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+	let email =
+	    Email::parse(self.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+	let password =
+	    Password::parse(self.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
-        Ok(User::new(email, password, self.requires_2fa))
+	Ok(User::new(email, password, self.requires_2fa))
     }
 }

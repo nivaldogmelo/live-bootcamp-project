@@ -29,6 +29,7 @@ tracing-subscriber = { version = "0.3.18", features = ["registry", "env-filter"]
 thiserror = "1.0.61"
 color-eyre = "0.6.3"
 tracing-error = "0.2.0"
+secrecy = { version = "0.8.0", features = ["serde"] }
 
 [dev-dependencies]
 fake = { version = "2.9.2", features = ["uuid"] }
