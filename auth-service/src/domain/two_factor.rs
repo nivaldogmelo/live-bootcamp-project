@@ -1,3 +1,4 @@
+use color_eyre::eyre::{eyre, Context, Result};
 use rand::Rng;
 use uuid::Uuid;
 
@@ -5,11 +6,9 @@ use uuid::Uuid;
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self, String> {
-        match Uuid::try_parse(&id) {
-            Ok(_) => Ok(Self(id)),
-            Err(_) => Err("Invalid login attempt id".to_string()),
-        }
+    pub fn parse(id: String) -> Result<Self> {
+        let parsed_id = uuid::Uuid::parse_str(&id).wrap_err("Invalid login attempt id")?;
+        Ok(Self(parsed_id.to_string()))
     }
 }
 
@@ -29,11 +28,11 @@ impl AsRef<str> for LoginAttemptId {
 pub struct TwoFACode(String);
 
 impl TwoFACode {
-    pub fn parse(code: String) -> Result<Self, String> {
+    pub fn parse(code: String) -> Result<Self> {
         if code.len() == 6 && code.chars().all(char::is_numeric) {
             Ok(Self(code))
         } else {
-            Err("Invalid 2FA code".to_string())
+            Err(eyre!("Invalid 2FA code"))
         }
     }
 }
