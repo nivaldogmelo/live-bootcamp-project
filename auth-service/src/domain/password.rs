@@ -17,7 +17,7 @@ impl AsRef<Secret<String>> for Password {
 }
 
 impl Password {
-    pub fn parse(password: Secret<String>) -> Result<Password> {
+    pub fn parse(password: Secret<String>) -> Result<Self> {
 	if validate_password(&password) {
 	    Ok(Self(password))
 	} else {

@@ -2,6 +2,7 @@ use auth_service::domain::{Email, TwoFACodeStore};
 use auth_service::{
     routes::TwoFactorAuthResponse, utils::constants::JWT_COOKIE_NAME, ErrorResponse,
 };
+use secrecy::Secret;
 
 use crate::helpers::{get_random_email, TestApp};
 use macros::test_and_cleanup;
@@ -55,7 +56,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     let store = app.two_fa_code_store.read().await;
 
-    let email = Email::parse(random_email).expect("Could not parse email");
+    let email = Email::parse(Secret::new(random_email)).expect("Could not parse email");
 
     assert!(store.get_code(&email).await.is_ok());
 }
