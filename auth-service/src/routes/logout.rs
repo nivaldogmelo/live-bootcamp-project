@@ -14,26 +14,26 @@ pub async fn logout(
     jar: CookieJar,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let cookie = match jar.get(JWT_COOKIE_NAME) {
-	Some(cookie) => cookie,
-	None => return (jar, Err(AuthAPIError::MissingToken)),
+        Some(cookie) => cookie,
+        None => return (jar, Err(AuthAPIError::MissingToken)),
     };
 
     let token = cookie.value().to_owned();
     let token = Secret::new(token);
 
     if (validate_token(token.expose_secret()).await).is_err() {
-	return (jar, Err(AuthAPIError::InvalidToken));
+        return (jar, Err(AuthAPIError::InvalidToken));
     }
 
     match state
-	.banned_token_store
-	.write()
-	.await
-	.add_banned_token(token.to_owned())
-	.await
+        .banned_token_store
+        .write()
+        .await
+        .add_banned_token(token.to_owned())
+        .await
     {
-	Ok(_) => (),
-	Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
+        Ok(_) => (),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     }
 
     let jar = jar.remove(cookie::Cookie::from(JWT_COOKIE_NAME));

@@ -12,15 +12,15 @@ pub struct HashsetBannedTokenStore {
 #[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
     async fn add_banned_token(
-	&mut self,
-	token: Secret<String>,
+        &mut self,
+        token: Secret<String>,
     ) -> Result<(), BannedTokenStoreError> {
-	self.tokens.insert(token.expose_secret().to_owned());
-	Ok(())
+        self.tokens.insert(token.expose_secret().to_owned());
+        Ok(())
     }
 
     async fn is_banned_token(&self, token: &Secret<String>) -> Result<bool, BannedTokenStoreError> {
-	Ok(self.tokens.contains(token.expose_secret()))
+        Ok(self.tokens.contains(token.expose_secret()))
     }
 }
 

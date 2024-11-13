@@ -9,9 +9,9 @@ pub trait UserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
     async fn get_user(&self, username: &Email) -> Result<User, UserStoreError>;
     async fn validate_user(
-	&self,
-	username: &Email,
-	password: &Password,
+        &self,
+        username: &Email,
+        password: &Password,
     ) -> Result<(), UserStoreError>;
 }
 
@@ -29,21 +29,21 @@ pub enum UserStoreError {
 
 impl PartialEq for UserStoreError {
     fn eq(&self, other: &Self) -> bool {
-	matches!(
-	    (self, other),
-	    (Self::UserAlreadyExists, Self::UserAlreadyExists)
-		| (Self::UserNotFound, Self::UserNotFound)
-		| (Self::InvalidCredentials, Self::InvalidCredentials)
-		| (Self::UnexpectedError(_), Self::UnexpectedError(_))
-	)
+        matches!(
+            (self, other),
+            (Self::UserAlreadyExists, Self::UserAlreadyExists)
+                | (Self::UserNotFound, Self::UserNotFound)
+                | (Self::InvalidCredentials, Self::InvalidCredentials)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
     }
 }
 
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
     async fn add_banned_token(
-	&mut self,
-	token: Secret<String>,
+        &mut self,
+        token: Secret<String>,
     ) -> Result<(), BannedTokenStoreError>;
     async fn is_banned_token(&self, token: &Secret<String>) -> Result<bool, BannedTokenStoreError>;
 }
@@ -59,14 +59,14 @@ pub enum BannedTokenStoreError {
 #[async_trait::async_trait]
 pub trait TwoFACodeStore {
     async fn add_code(
-	&mut self,
-	email: Email,
-	login_attempt_id: LoginAttemptId,
-	code: TwoFACode,
+        &mut self,
+        email: Email,
+        login_attempt_id: LoginAttemptId,
+        code: TwoFACode,
     ) -> Result<(), TwoFACodeStoreError>;
     async fn get_code(
-	&self,
-	email: &Email,
+        &self,
+        email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError>;
 }
@@ -81,10 +81,10 @@ pub enum TwoFACodeStoreError {
 
 impl PartialEq for TwoFACodeStoreError {
     fn eq(&self, other: &Self) -> bool {
-	matches!(
-	    (self, other),
-	    (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
-		| (Self::UnexpectedError(_), Self::UnexpectedError(_))
-	)
+        matches!(
+            (self, other),
+            (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
     }
 }

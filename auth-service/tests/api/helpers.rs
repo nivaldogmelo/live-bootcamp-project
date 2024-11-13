@@ -2,12 +2,15 @@ use std::{str::FromStr, sync::Arc};
 
 use auth_service::{
     app_state::AppState,
+    domain::Email,
     get_postgres_pool, get_redis_client,
-    services::{MockEmailClient, PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
+    services::{
+	PostgresUserStore, PostmarkEmailClient, RedisBannedTokenStore, RedisTwoFACodeStore,
+    },
     utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME},
     Application,
 };
-use reqwest::cookie::Jar;
+use reqwest::{cookie::Jar, Client};
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -15,6 +18,7 @@ use sqlx::{
 };
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use wiremock::MockServer;
 
 pub struct TestApp {
     pub address: String,
@@ -22,6 +26,7 @@ pub struct TestApp {
     pub banned_token_store: Arc<RwLock<RedisBannedTokenStore>>,
     pub two_fa_code_store: Arc<RwLock<RedisTwoFACodeStore>>,
     pub http_client: reqwest::Client,
+    pub email_server: MockServer,
     pub db_name: String,
     pub cleaned_up: bool,
 }
@@ -36,7 +41,9 @@ impl TestApp {
 	let banned_token_store =
 	    Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_conn.clone())));
 	let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_conn)));
-	let email_client = Arc::new(MockEmailClient);
+	let email_server = MockServer::start().await;
+	let base_url = email_server.uri();
+	let email_client = Arc::new(configure_postmark_email_client(base_url));
 	let app_state = AppState::new(
 	    user_store,
 	    banned_token_store.clone(),
@@ -67,6 +74,7 @@ impl TestApp {
 	    banned_token_store,
 	    two_fa_code_store,
 	    http_client,
+	    email_server,
 	    db_name,
 	    cleaned_up: false,
 	}
@@ -232,4 +240,17 @@ fn configure_redis() -> redis::Connection {
 
 pub fn get_random_email() -> String {
     format!("{}@example.com", Uuid::new_v4())
+}
+
+pub fn configure_postmark_email_client(base_url: String) -> PostmarkEmailClient {
+    let postmark_auth_token = Secret::new("auth_token".to_owned());
+
+    let sender = Email::parse(Secret::new(test::email_client::SENDER.to_owned())).unwrap();
+
+    let http_client = Client::builder()
+	.timeout(test::email_client::TIMEOUT)
+	.build()
+	.expect("Failed to build HTTP client.");
+
+    PostmarkEmailClient::new(http_client, base_url, sender, postmark_auth_token)
 }
